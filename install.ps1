@@ -118,7 +118,7 @@ function Install-UnslothStudio {
     # ── Helper: refresh PATH from registry (deduplicating entries) ──
     # Merge order: venv Scripts (if active) > Machine > User > current $env:Path.
     # Dedup compares both raw and expanded forms (%VAR% vs literal).
-    function Refresh-SessionPath {
+    function Update-SessionPath {
         $machine = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
         $user    = [System.Environment]::GetEnvironmentVariable("Path", "User")
         $venvScripts = if ($env:VIRTUAL_ENV) { Join-Path $env:VIRTUAL_ENV "Scripts" } else { $null }
@@ -723,7 +723,7 @@ shell.Run cmd, 0, False
             $wingetExit = $LASTEXITCODE
         } catch { $wingetExit = 1 }
         $ErrorActionPreference = $prevEAP
-        Refresh-SessionPath
+        Update-SessionPath
 
         # Re-detect after install (PATH may have changed)
         $DetectedPython = Find-CompatiblePython
@@ -740,7 +740,7 @@ shell.Run cmd, 0, False
                 $wingetExit = $LASTEXITCODE
             } catch { $wingetExit = 1 }
             $ErrorActionPreference = $prevEAP
-            Refresh-SessionPath
+            Update-SessionPath
             $DetectedPython = Find-CompatiblePython
         }
 
@@ -761,12 +761,12 @@ shell.Run cmd, 0, False
         $ErrorActionPreference = "Continue"
         try { winget install --id=astral-sh.uv -e --accept-package-agreements --accept-source-agreements } catch {}
         $ErrorActionPreference = $prevEAP
-        Refresh-SessionPath
+        Update-SessionPath
         # Fallback: if winget didn't put uv on PATH, try the PowerShell installer
         if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
             substep "trying alternative uv installer..." "Yellow"
             Invoke-Expression (Invoke-RestMethod -Uri "https://astral.sh/uv/install.ps1")
-            Refresh-SessionPath
+            Update-SessionPath
         }
     }
 
@@ -1181,7 +1181,7 @@ shell.Run cmd, 0, False
     if ($shimUpdated -and $pathAdded) {
         step "path" "added unsloth launcher to PATH"
     }
-    Refresh-SessionPath  # sync current session with registry
+    Update-SessionPath  # sync current session with registry
 
     # ── Tauri mode: done, skip shortcuts and auto-launch ──
     if ($TauriMode) {
